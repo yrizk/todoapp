@@ -37,7 +37,7 @@ def index():
 
 @app.route('/list/<list_id>', methods=['GET'])
 def get_todos_from_list(list_id):
-    return render_template('lists.html', data=Todo.query.filter_by(list_id=list_id).order_by('id').all())
+    return render_template('todos.html', data=Todo.query.filter_by(list_id=list_id).order_by('id').all())
 
 
 @app.route('/lists/create', methods=['POST'])
@@ -58,7 +58,8 @@ def create_todo():
   body = {}
   try:
     description = request.get_json()['description']
-    todo = Todo(description=description)
+    list_id = request.get_json()['list_id']
+    todo = Todo(description=description, list_id=list_id)
     db.session.add(todo)
     db.session.commit()
     body['description'] = todo.description
