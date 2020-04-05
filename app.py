@@ -17,14 +17,40 @@ class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(), nullable=False)
     completed = db.Column(db.Boolean, nullable=False, default=False)
+    # every row has a parent row in a table called todolists , the column is id.
+    list_id = db.Column(db.Integer, db.ForeignKey('todolists.id'), nullable=False)
 
     def __repr__(self):
         return f'<Todo {self.id} {self.description} {self.completed}>'
 
+
+class TodoList(db.Model):
+    __tablename__ = 'todolists'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False)
+    # class name of the child object, backref is just the prefix of the child foreign key.
+    todos = db.relationship('Todo', backref='list', lazy=True)
+
 @app.route('/')
 def index():
-    data = Todo.query.order_by('id').all()
-    return render_template('index.html', data=data)
+    return render_template('index.html', data=TodoList.query.order_by('id').all())
+
+@app.route('/list/<list_id>', methods=['GET'])
+def get_todos_from_list(list_id):
+    return render_template('lists.html', data=Todo.query.filter_by(list_id=list_id).order_by('id').all())
+
+
+@app.route('/lists/create', methods=['POST'])
+def create_todo_list():
+    name = request.get_json()['name']
+    t = TodoList(name=name)
+    db.session.add(t)
+    db.session.commit()
+    body = {}
+    body['name'] = t.name;
+    body['id'] = t.id
+    return jsonify(body)
+
 
 @app.route('/todos/create', methods=['POST'])
 def create_todo():
@@ -66,10 +92,11 @@ def update_todo(todo_id):
     try:
         completed = request.get_json()['completed']
         t = Todo.query.get(todo_id)
-        t.completed = completed
+        st.completed = completed
+        list_id = t.list_id
         db.session.commit()
     except:
         db.session.rollback()
     finally:
         db.session.close()
-    return redirect(url_for('index'))
+    return redirect(url_for('get_todos_from_list', list_id=list_id))

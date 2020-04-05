@@ -1,6 +1,6 @@
 <html>
-<head>
-    <title>TODO App </title>
+    <title> TODO App </title>
+    <head>
     <style>
     .hidden {
         display: none;
@@ -22,95 +22,50 @@
         font-size: 20px;
     }
     </style>
-</head>
-<body>
+    </head>
+    <body>
     <form id="form">
-      <input type="text" id="description" />
+      <input type="text" id="name" />
       <input type="submit" value="Create" />
     </form>
     <div id="error" class="hidden">Something Went Wrong :( </div>
-    <ul id="todos">
-    {%for d in data%}
-    <li>
-        <input 
-            class="check-completed" 
-            data-id="{{ d.id }}" type="checkbox" {%if d.completed %} checked {%endif%}/>
-        {{d.description}}
-        <button data-id="{{ d.id }}" class="delete">&cross;</button>
-    </li>
-    {%endfor%}
-    </ul>
+        <ul id="todolists">
+            {% for l in data %}
+            <li> 
+                <a href="/list/{{l.id}}">{{ l.name }}</a>
+            </li>
+            {%endfor%}
+        </ul>
+    </body>
     <script>
-        const buttons = document.querySelectorAll('.delete');
-        for (let i = 0; i < buttons.length; i++) {
-            buttons[i].onclick = function(e) {
-                print(e.target.dataset['id'])
-                fetch('/todos/' + e.target.dataset['id'], {
-                    method: 'DELETE'
-                }).then(function() {
-                    document.getElementById('error').className = 'hidden';
-                    // delete it from the view.
-                    e.target.parentElement.remove();
-                }).catch(function() {
-                    document.getElementById('error').className = '';
-                });
-            }
-        }
-        const checkboxes = document.querySelectorAll('.check-completed');
-        for (let i = 0 ; i < checkboxes.length; i++) {
-            const checkbox = checkboxes[i];
-            checkbox.onchange = function(e) {
-                fetch('/todos/' + e.target.dataset['id'] + '/update', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        'completed': e.target.checked
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-
-                }).then(function() {
-                    document.getElementById('error').className = 'hidden';
-                }).catch(function() {
-                    document.getElementById('error').className = '';
-                });
-            };
-        } 
-        function makeTodo(res) {
-            const checkBox = document.createElement('INPUT');
-            checkBox.type = "checkbox";
-            checkBox.setAttribute('data-id', res['id']);
-            checkBox.setAttribute('class', 'check-completed');
-            checkBox.checked = res['completed'];
-            const liItem = document.createElement('LI');
-            liItem.appendChild(checkBox);
-            liItem.innerHTML += res['description'];
-            const delButton = document.createElement('BUTTON');
-            delButton.setAttribute('data-id', res['id']);
-            delButton.innerHTML = "&cross;"
-            liItem.appendChild(delButton);
-            document.getElementById('todos').appendChild(liItem);
+        function createTodoListItem(data) {
+            const li = document.createElement('LI');
+            const a = document.createElement('A');
+            a.href = "/list/" + data['id'];
+            a.innerHTML = data['name'];
+            li.appendChild(a);
+            document.getElementById('todolists').appendChild(li);
         }
         document.getElementById('form').onsubmit =  function(e) { 
             e.preventDefault();
-            fetch('/todos/create', {
+            fetch('/lists/create', {
                 method: 'POST',
                 body: JSON.stringify({
-                    'description': document.getElementById('description').value
+                    'name': document.getElementById('name').value
                 }),
                 headers: {
                     'Content-Type': 'application/json'
                 }
             }).then(function(jsonResponse) {
                 jsonResponse.json().then((data) => {
-                    makeTodo(data);
+                    createTodoListItem(data);
                     document.getElementById('error').className = 'hidden';
+                    document.getElementById('name').value = ""
                 }).catch(function(e) {
                     document.getElementById('error').className = '';
                     console.log(e);
                 });
-            })
+            });
         };
     </script>
-</body>
 </html>
